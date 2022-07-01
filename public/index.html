@@ -10,34 +10,331 @@
       content="Web site created using create-react-app"
     />
     <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
-    <!--
-      manifest.json provides metadata used when your web app is installed on a
-      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
-    -->
+   
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-    <!--
-      Notice the use of %PUBLIC_URL% in the tags above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
+    <meta charset="UTF-8" />
+    <title>Making your first Phaser 3 Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 12;
+        }
+    </style>
+
   </head>
   <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+   
+    <!-- <script type="text/javascript">
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+      var config = {
+          type: Phaser.CANVAS,
+          width: 800,
+          height: 600,
+          physics: {
+            default: 'arcade',
+            arcade: {
+              gravity: { y: 300 },
+              debug: false
+            }
+          },
+          scene: {
+              preload: preload,
+              create: create,
+              update: update
+          }
+      };
+  
+      var game = new Phaser.Game(config);
+  
+      var score = 0;
+      var scoreText;
+      let gameOver = false
 
-      To begin the development, run `npm start` or `yarn start`.
-      To create a production bundle, use `npm run build` or `yarn build`.
-    -->
+      function preload ()
+      {
+          this.load.image('sky', 'assets/sky.png');
+          this.load.image('ground', 'assets/platform.png');
+          this.load.image('star', 'assets/star.png');
+          this.load.image('bomb', 'assets/bomb.png');
+          this.load.spritesheet('dude', 
+              'assets/dude.png',
+          { frameWidth: 32, frameHeight: 48 }
+      );
+      }
+  
+      function create ()
+      {
+        // montando o cenário 
+        this.add.image(400, 300, 'sky');
+
+        platforms = this.physics.add.staticGroup();
+
+        platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+        
+        platforms.create(600, 400, 'ground');
+        platforms.create(50, 250, 'ground');
+        platforms.create(750, 220, 'ground');
+
+        // criando o jogador
+        player = this.physics.add.sprite(300, 200, 'dude'); // corpo de física dinâmico
+
+        player.setBounce(0.2); //fator de resalto
+        player.setCollideWorldBounds(true);
+        player.body.setGravityY(300) // peso do jogador
+        // animação do sprite
+        // correr para a esquerda usando os quadros 0,1,2 e 3
+        this.anims.create({
+            key: 'left',
+            frames: this.anims.generateFrameNumbers('dude', { start: 0, end: 3 }),
+            frameRate: 10,
+            repeat: -1
+          });
+
+        this.anims.create({
+            key: 'turn',
+            frames: [ { key: 'dude', frame: 4 } ],
+            frameRate: 20
+          });
+
+        this.anims.create({
+            key: 'right',
+            frames: this.anims.generateFrameNumbers('dude', { start: 5, end: 8 }),
+            frameRate: 10,
+            repeat: -1
+          });
+          
+          // lib suportadas de física: Arcade Physics, Impact Physics e Matter.js Physics
+          
+          this.physics.add.collider(player, platforms); // add colisão entre jogador e as plataformas 
+          
+          // movimentação pelo teclado do jogador
+          cursors = this.input.keyboard.createCursorKeys(); // capturar teclas
+          
+          
+          // criando as estrelas 
+          stars = this.physics.add.group({
+            key: 'star',
+            repeat: 11,
+            setXY: { x: 12, y: 0, stepX: 70 }
+          });
+          
+          stars.children.iterate(function (child) {
+            
+            // efeito da gravidade ao tocar o chão e retornar aleatoriamente ao estado de inércia
+            // definido dois valores do range, onde pode variar o 'quicado' da estrela
+            child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.5));
+            
+          });
+          this.physics.add.collider(stars, platforms); // add colisão entre estrelas e as plataformas 
+          /**
+           * Isso diz ao Phaser para verificar se há sobreposição entre o player 
+           * e qualquer estrela no grupo de estrelas. Se encontradas, 
+           * elas são passadas para a função 'collectStar':
+           */
+          this.physics.add.overlap(player, stars, collectStar, null, this);
+
+          // criando pontuação exibida no canto superior esquerdo
+          scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
+
+          // criando o Vilão, as bombas irão colidir com o player
+          bombs = this.physics.add.group();
+          this.physics.add.collider(bombs, platforms);
+          this.physics.add.collider(player, bombs, hitBomb, null, this);
+      }
+      
+      function update ()
+      {
+
+        if (gameOver) {
+            return;
+        }
+
+        // monvimentar o jogador pelo teclado
+        if (cursors.left.isDown)
+        {
+            player.setVelocityX(-160);
+
+            player.anims.play('left', true);
+        }
+        else if (cursors.right.isDown)
+        {
+            player.setVelocityX(160);
+
+            player.anims.play('right', true);
+        }
+        else
+        {
+            player.setVelocityX(0);
+
+            player.anims.play('turn');
+        }
+
+        if (cursors.up.isDown && player.body.touching.down)
+        {
+            player.setVelocityY(-550);
+        }
+      }
+
+      function collectStar (player, star)
+      {
+        star.disableBody(true, true);
+        console.log('coletou + uma estra!');
+        score += 10;
+        scoreText.setText('Score: ' + score);
+
+        // ao coletar todas as estrelas 
+
+        if (stars.countActive(true) === 0){
+          stars.children.iterate(function (child) {
+
+              child.enableBody(true, child.x, 0, true, true);
+
+          });
+
+          var x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+          var bomb = bombs.create(x, 16, 'bomb');
+          bomb.setBounce(1);
+          bomb.setCollideWorldBounds(true);
+          bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+
+        }
+      }
+
+      function hitBomb (player, bomb)
+      {
+        this.physics.pause();
+        player.setTint(0xff0000);
+        player.anims.play('turn');
+
+        gameOver = true;
+        score = 0;
+      }
+      
+    </script>
+
+
+    <script>
+      var config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        parent: 'phaser-example',
+        pixelArt: true,
+        backgroundColor: '#1a1a2d',
+        scene: {
+            preload: preload,
+            create: create
+        }
+      };
+
+      var game = new Phaser.Game(config);
+
+      function preload ()
+      {
+        
+        this.load.image('tiles', 'assets/tilemaps/drawtiles-spaced.png');
+        this.load.image('car', 'assets/sprites/car90.png');
+        this.load.tilemapCSV('map', 'assets/tilemaps/csv/grid.csv');
+      }
+
+      function create ()
+      {
+        var map = this.make.tilemap({ key: 'map', tileWidth: 32, tileHeight: 32 });
+        var tileset = map.addTilesetImage('tiles', null, 32, 32, 1, 2);
+        var layer = map.createLayer(0, tileset, 0, 0);
+
+        var player = this.add.image(32+16, 32+16, 'car');
+
+        //  Left
+        this.input.keyboard.on('keydown-A', function (event) {
+
+            var tile = layer.getTileAtWorldXY(player.x - 32, player.y, true);
+
+            console.log(' tile index ' + tile.index)
+            if (tile.index ===9) {
+              alert('você entrou em uma área restrita!')
+            }
+            if (tile.index === 2)
+            {
+                //  Blocked, we can't move
+            }
+            else
+            {
+                player.x -= 32;
+                player.angle = 180;
+            }
+
+        });
+
+        //  Right
+        this.input.keyboard.on('keydown-D', function (event) {
+
+            var tile = layer.getTileAtWorldXY(player.x + 32, player.y, true);
+
+            console.log('-- tile index ' + tile.index)
+            if (tile.index ===9) {
+              alert('você entrou em uma área restrita!')
+            }
+            if (tile.index === 2)
+            {
+                //  Blocked, we can't move
+            }
+            else
+            {
+                player.x += 32;
+                player.angle = 0;
+            }
+
+        });
+
+        //  Up
+        this.input.keyboard.on('keydown-W', function (event) {
+
+            var tile = layer.getTileAtWorldXY(player.x, player.y - 32, true);
+
+            console.log('-- tile index ' + tile.index)
+            if (tile.index ===9) {
+              alert('você entrou em uma área restrita!')
+            }
+            if (tile.index === 2)
+            {
+                //  Blocked, we can't move
+            }
+            else
+            {
+                player.y -= 32;
+                player.angle = -90;
+            }
+
+        });
+
+        //  Down
+        this.input.keyboard.on('keydown-S', function (event) {
+
+            var tile = layer.getTileAtWorldXY(player.x, player.y + 32, true);
+
+            console.log('-- tile index ' + tile.index)
+            if (tile.index ===9) {
+              alert('você entrou em uma área restrita!')
+            }
+            if (tile.index === 2)
+            {
+                //  Blocked, we can't move
+            }
+            else
+            {
+                player.y += 32;
+                player.angle = 90;
+            }
+
+        });
+
+      }
+    </script> -->
+   
   </body>
 </html>
