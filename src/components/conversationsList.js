@@ -42,6 +42,7 @@ class ConversationsList extends React.Component {
 
   render = () => {
     const { conversations, activeConversation } = this.state;
+
     return (
       <div className="conversationsList">
         <ActionCable

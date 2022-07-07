@@ -1,5 +1,5 @@
 import React from 'react'
-import Room from '../room'
+import Room from './room'
 
 export default function OfficeComponent() {
 
