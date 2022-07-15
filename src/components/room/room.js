@@ -9,13 +9,26 @@ import  axios from 'axios'
 export default function Room() {
   // websocket
   const roomChannel = ActionCable.createConsumer(API_WS_ROOT)
-  
+  const data = { 
+    name: 'raphael' + randomInt(1, 20),
+    email: "email.fake@ras.com"
+  }
+
+  function randomInt (low, high) {
+    return Math.floor(Math.random() * (high - low) + low);
+  }
+
   function establishActionCableConnection() {
 
-    roomChannel.subscriptions.create({channel: 'GameRoomChannel', room: '1'}, {
+   
+   
+    roomChannel.subscriptions.create({channel: 'GameRoomChannel', data: data}, {
+      connected(data) {
+        console.log('entrou em uma sala!!')
+      },
       received(data) { 
-        console.info('received data x------ > ' + data.position.position_x)
-        console.info('received data y------ > ' + data.position.position_y)
+        console.info('player ' + data.player_name +' x------ > ' + data.position_x)
+        console.info('received'  + data.player_name + ' y------ > ' + data.position_y)
       }
 
     });
@@ -26,7 +39,8 @@ export default function Room() {
     console.log(`${API_ROOT}/users`)
 
     axios.post(`${API_ROOT}/users`, {
-      user: {
+      data: {
+        player_name: data.name ,
         position_x: player.x,
         position_y: player.y
       }
