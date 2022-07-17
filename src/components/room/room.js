@@ -19,14 +19,14 @@ export default function Room() {
   }
 
   function establishActionCableConnection() {
-
-   
-   
     roomChannel.subscriptions.create({channel: 'GameRoomChannel', data: data}, {
       connected(data) {
         console.log('entrou em uma sala!!')
+        // acho q aqui deve retornar todos os players que estão nesta sala
       },
       received(data) { 
+
+        //  atualizar a posição de cada player
         console.info('player ' + data.player_name +' x------ > ' + data.position_x)
         console.info('received'  + data.player_name + ' y------ > ' + data.position_y)
       }
@@ -36,9 +36,9 @@ export default function Room() {
 // TODO: criar um canal que o player assina e somente para transmitir os movimentos dos players 
 // esse canal irá transmitir de volta para game_room_1
   function sendPlayerPosition(player) {
-    console.log(`${API_ROOT}/users`)
+    console.log(`${API_ROOT}/move_players`)
 
-    axios.post(`${API_ROOT}/users`, {
+    axios.post(`${API_ROOT}/move_players`, {
       data: {
         player_name: data.name ,
         position_x: player.x,
@@ -92,7 +92,9 @@ export default function Room() {
     this.input.keyboard.on('keydown-A', function (event) {
 
         let tile = layer.getTileAtWorldXY(player.x - 32, player.y, true);
-        // roomChannel.send({player: player, position: { x: player.x, y: player.y}});
+        debugger 
+        roomChannel.send({player: player, position: { x: player.x, y: player.y}});
+        
         sendPlayerPosition(player);
         
         console.log(' tile index ' + tile.index)
