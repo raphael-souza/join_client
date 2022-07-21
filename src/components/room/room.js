@@ -14,24 +14,37 @@ export default function Room() {
     email: "email.fake@ras.com"
   }
 
+  let players = [];
+  let usersInRoom = [];
+
+
   function randomInt (low, high) {
     return Math.floor(Math.random() * (high - low) + low);
   }
 
   function establishActionCableConnection() {
     roomChannel.subscriptions.create({channel: 'GameRoomChannel', data: data}, {
-      connected(data) {
-        console.log('entrou em uma sala!!')
-        // acho q aqui deve retornar todos os players que estão nesta sala
+      connected: () => {
+        console.log('RoomsChannel connected!')
       },
-      received(data) { 
+      disconnected: () => {
+        console.log('RoomsChannel disconnected!');
+      },
+      received: data => {
+        // once the subscription is initiated
+        // when the server is sent data it will
+        // broadcast it out to the subscribers
+        // this.handleReceivedRoom(data)
+        debugger
 
-        //  atualizar a posição de cada player
-        console.info('player ' + data.player_name +' x------ > ' + data.position_x)
-        console.info('received'  + data.player_name + ' y------ > ' + data.position_y)
+        players[0]['player'].x = data.position_x
+        players[0]['player'].y = data.position_y
+        console.log(data)
+        console.log('RoomsChannel data received')
       }
 
     });
+
   }
 // TODO: criar um canal que o player assina e somente para transmitir os movimentos dos players 
 // esse canal irá transmitir de volta para game_room_1
@@ -50,6 +63,17 @@ export default function Room() {
       console.log(response);
     })
   }
+
+  async function getUsers() {
+    console.log("buscando users");
+
+    let res = await axios.get(`${API_ROOT}/users`)   
+    if (res.status === 200) {
+      return res.data;
+    } else {
+      console.log("erro ao buscar users!!!!!!!!!!!!")
+    }
+  }
   
 
   // config do jogo
@@ -62,7 +86,8 @@ export default function Room() {
     backgroundColor: '#1a1a2d',
     scene: {
         preload: preload,
-        create: create
+        create: create,
+        update: update
     }
   };
 
@@ -87,13 +112,22 @@ export default function Room() {
     const layer = map.createLayer(0, tileset, 0, 0);
 
     const player = this.add.image(32+16, 32+16, 'car');
+    getUsers().then( (res) => { 
+      usersInRoom = res;  
+      usersInRoom.map((user)=> { 
+        let newPlayer = {profile: user, player: this.add.image(randomInt(32, 200), randomInt(32, 500), 'car')};
+        players.push(newPlayer);
+        layer.getTileAtWorldXY(newPlayer['player'].x + 32, newPlayer['player'].y, true);
 
+
+      });
+    });
+ 
     //  Left
     this.input.keyboard.on('keydown-A', function (event) {
 
-        let tile = layer.getTileAtWorldXY(player.x - 32, player.y, true);
-        debugger 
-        roomChannel.send({player: player, position: { x: player.x, y: player.y}});
+        let tile = layer.getTileAtWorldXY(player.x - 32, player.y, true); 
+        // roomChannel.send({player: player, position: { x: player.x, y: player.y}});
         
         sendPlayerPosition(player);
         
@@ -184,7 +218,7 @@ export default function Room() {
   }
 
   function update () {
-    console.log("update")
+  // updated
   }
 
 }
